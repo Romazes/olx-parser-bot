@@ -1,8 +1,12 @@
 import "dotenv/config";
 import TelegramBot from "node-telegram-bot-api";
-import scrapeOLX from "./olxService.js";
-import { getOrderById } from "../models/orderModel.js";
+import { scrapeOLX, updateOlxAdvertisement } from "./olxService.js";
 import { olxCategories } from "../models/olxModel.js";
+import {
+  createNewSubscription,
+  getListSubscriptionByUserId,
+  getSubscriptionByUserIdAndIndex,
+} from "../models/subscriptionModel.js";
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
 const allowedUserIds = process.env.TELEGRAM_BOT_ID_RESTRICT_LIST;
@@ -24,9 +28,11 @@ const BOT_COMMANDS = [
     command: "categories",
     description: "Список доступник категорій для підписки",
   },
+  {
+    command: "update",
+    description: "Оновити підписку по ід",
+  },
 ];
-
-const subscriptions = [];
 
 await bot.setMyCommands(BOT_COMMANDS);
 
@@ -48,14 +54,26 @@ bot.on("message", (msg) => {
       );
       return;
     case "/list":
-      const userSubscriptions = subscriptions.find(
-        (x) => x.userId === userID
-      )?.subscriptions;
+      const userSubscriptions = getListSubscriptionByUserId(userID);
+
+      if (!userSubscriptions) {
+        bot.sendMessage(
+          chatId,
+          "👀 Активні підписки:\nНажаль, немає активних підписок"
+        );
+        return;
+      }
+
+      const temp = [];
+      for (let i = 0; i < userSubscriptions.length; i++) {
+        temp.push(`${i}. ${userSubscriptions[i].join(" ")}`);
+      }
+
       bot.sendMessage(
         chatId,
         `👀 Активні підписки:\n${
-          userSubscriptions ? userSubscriptions.join("\n") : ""
-        }\nЧтобы удалить подписку, напишите /delete и номер подписки или поисковый запрос.\nНаприклад:\n/delete 4\n/delete Gamedev.\n/delete all удалит все подписки.`
+          userSubscriptions ? temp.join("\n") : ""
+        }\n\nЧтобы удалить подписку, напишите /delete и номер подписки или поисковый запрос.\nНаприклад:\n/delete 1`
       );
       return;
     case "/categories":
@@ -65,6 +83,38 @@ bot.on("message", (msg) => {
         `Доступні категорії для підписки:\n\n${categories}\n\np.s. дотримуйтесь правильності написання категорії`
       );
       return;
+    case "/update":
+      bot.sendMessage(
+        chatId,
+        `Щоб оновити підписку і получити нові оголошення. Наприклад:\n/update 1, де '1' номер вашой підписки див. /list`
+      );
+      return;
+  }
+
+  if (messageText.startsWith("/update")) {
+    const splitMessageText = messageText.split(" ");
+
+    const userSubscription = getSubscriptionByUserIdAndIndex(
+      userID,
+      splitMessageText[1]
+    );
+
+    if (!userSubscription) {
+      bot.sendMessage(
+        chatId,
+        "Grammar Nazi, немає такого індексу або усе зламалося к хуям"
+      );
+      return;
+    }
+
+    const categoryUrlPath = olxCategories[userSubscription[0]];
+    const searchKeyWords = userSubscription.slice(1);
+
+    updateOlxAdvertisement(categoryUrlPath, searchKeyWords)
+      .then((result) =>
+        bot.sendMessage(chatId, `Було додано ${result} оголошень`)
+      )
+      .catch((e) => bot.sendMessage(chatId, e.message));
   }
 
   if (messageText.startsWith("/add")) {
@@ -85,10 +135,7 @@ bot.on("message", (msg) => {
     }
 
     // ADD to temp subscriptions array
-    var index = subscriptions.findIndex((x) => x.userId === userID);
-    index === -1
-      ? subscriptions.push({ userId: userID, subscriptions: [searchKeyWords] })
-      : subscriptions[index].subscriptions.push(searchKeyWords);
+    createNewSubscription(userID, splitMessageText.slice(1));
 
     scrapeOLX(categoryUrlPath, searchKeyWords)
       .then((result) =>
@@ -98,14 +145,6 @@ bot.on("message", (msg) => {
         )
       )
       .catch((e) => bot.sendMessage(chatId, e.message));
-  }
-
-  if (!isNaN(messageText)) {
-    const order = getOrderById(messageText);
-    bot.sendMessage(
-      chatId,
-      `orderId: ${order.orderId} | Link: ${order.orderLink}`
-    );
   }
 });
 

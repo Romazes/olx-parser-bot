@@ -8,8 +8,8 @@ export function getAllOrders() {
   return orders;
 }
 
-export function getOrderById(id) {
-  return orders.find((o) => o.id == id);
+export function getOrderByOrderId(orderId) {
+  return orders.find((o) => o.orderId == orderId);
 }
 
 export function createOrder(order) {
