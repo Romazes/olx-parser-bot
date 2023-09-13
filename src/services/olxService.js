@@ -1,16 +1,14 @@
 import axios from "axios";
 import { load } from "cheerio";
 import { createOrder } from "../models/orderModel.js";
-
-// Define the URL of the OLX page you want to scrape
-const url = "https://www.olx.ua";
+import { olxURL } from "../models/olxModel.js";
 
 // Function to fetch and parse the page
-async function scrapeOLX(search) {
+export async function scrapeOLX(search) {
   try {
     // Send an HTTP GET request to the URL
     const queryParam = "/list/q-" + search.trim().replace(" ", "-");
-    const response = await axios.get(url + queryParam);
+    const response = await axios.get(olxURL + queryParam);
 
     // Load the HTML content into Cheerio
     const $ = load(response.data);
@@ -18,7 +16,11 @@ async function scrapeOLX(search) {
     // Find all the user ads on the page (adjust the HTML structure as needed)
     const userAds = $('[data-testid="listing-grid"]');
 
-    const amountPages = $('[data-testid="pagination-wrapper"]').children("ul").children("li").last().text();
+    const amountPages = $('[data-testid="pagination-wrapper"]')
+      .children("ul")
+      .children("li")
+      .last()
+      .text();
 
     return;
 
