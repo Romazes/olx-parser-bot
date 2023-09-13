@@ -38,6 +38,14 @@ export async function scrapeOLX(search) {
   }
 }
 
+/**
+ * Parse categories list by ID from OLX
+ * 
+ * @param {number} subCategoryId
+ * 
+ * @example
+ * subCategoryID = 891 // moda i stil category
+ */
 export async function parseOLXCategories(subCategoryId) {
   try {
     const response = await axios.get(olxURL);
