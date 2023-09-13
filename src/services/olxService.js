@@ -1,48 +1,50 @@
 import axios from "axios";
 import { load } from "cheerio";
-import { createOrder } from "../models/orderModel.js";
-import { olxURL } from "../models/olxModel.js";
+import { createOrder, getOrdersLength } from "../models/orderModel.js";
+import { olxSearchFilter, olxURL } from "../models/olxModel.js";
 
-// Function to fetch and parse the page
-export async function scrapeOLX(search) {
-  try {
-    // Send an HTTP GET request to the URL
-    const queryParam = "/list/q-" + search.trim().replace(" ", "-");
-    const response = await axios.get(olxURL + queryParam);
+export default async function scrapeOLX(categoryUrlPath, searchKeyWords) {
+  const pathParam = "q-" + searchKeyWords.join("-") + "/";
+  const queryParam = "?" + olxSearchFilter["new_ones"];
+  const response = await axios.get(
+    olxURL + categoryUrlPath + pathParam + queryParam
+  );
 
-    // Load the HTML content into Cheerio
-    const $ = load(response.data);
+  const $ = load(response.data);
 
-    // Find all the user ads on the page (adjust the HTML structure as needed)
-    const userAds = $('[data-testid="listing-grid"]');
+  const amountUserAds = $('[data-testid="listing-count-msg"]')
+    .children()
+    .text()
+    .match(/\d+/);
 
-    const amountPages = $('[data-testid="pagination-wrapper"]')
-      .children("ul")
-      .children("li")
-      .last()
-      .text();
-
-    return;
-
-    // Loop through the user ads and extract relevant information
-    userAds.children('[data-cy="l-card"]').each((index, element) => {
-      const orderId = $(element).attr("id");
-      const orderLink = url + $(element).children("a").attr("href");
-      const orderTitle = $(element).find("h6").text();
-
-      createOrder({ orderId, orderLink, orderTitle });
-    });
-    console.log("Finished successfully");
-  } catch (error) {
-    console.error("Failed to retrieve the page:", error.message);
+  if (amountUserAds[0] <= 0) {
+    throw new Error("За цими ключовими словами не знайдено оголошень");
   }
+
+  const userAds = $('[data-testid="listing-grid"]');
+
+  const amountPages = $('[data-testid="pagination-wrapper"]')
+    .children("ul")
+    .children("li")
+    .last()
+    .text();
+
+  userAds.children('[data-cy="l-card"]').each((index, element) => {
+    const orderId = $(element).attr("id");
+    const orderLink = olxURL + $(element).children("a").attr("href");
+    const orderTitle = $(element).find("h6").text();
+
+    createOrder({ orderId, orderLink, orderTitle });
+  });
+
+  return getOrdersLength();
 }
 
 /**
  * Parse categories list by ID from OLX
- * 
+ *
  * @param {number} subCategoryId
- * 
+ *
  * @example
  * subCategoryID = 891 // moda i stil category
  */
@@ -67,7 +69,7 @@ export async function parseOLXCategories(subCategoryId) {
         }
 
         const categoryLink = new URL($(element).find("a").attr("href"));
-        const subTitle = categoryLink.pathname.split('/')[2];
+        const subTitle = categoryLink.pathname.split("/")[2];
         console.log(`"${subTitle}" : "${categoryLink.pathname}"`);
       });
   } catch (error) {

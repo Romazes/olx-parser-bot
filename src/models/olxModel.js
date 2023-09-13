@@ -4,7 +4,7 @@ export const olxURL = "https://www.olx.ua";
  * OLX Categories
  * Format: category = url_path;
  */
-const olxCategories = {
+export const olxCategories = {
   "moda-i-stil": "/moda-i-stil/",
   "zhenskaya-odezhda": "/moda-i-stil/zhenskaya-odezhda/",
   "zhenskaya-obuv": "/moda-i-stil/zhenskaya-obuv/",
@@ -22,3 +22,9 @@ const olxCategories = {
   "spetsodezhda-i-spetsobuv": "/moda-i-stil/spetsodezhda-i-spetsobuv/",
   "moda-raznoe": "/moda-i-stil/moda-raznoe/",
 };
+
+export const olxSearchFilter = {
+  most_expensive: "search%5Border%5D=filter_float_price:desc",
+  most_cheep: "search%5Border%5D=filter_float_price:asc",
+  new_ones: "search%5Border%5D=created_at:desc"
+}

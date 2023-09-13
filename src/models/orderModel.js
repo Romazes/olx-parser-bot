@@ -1,5 +1,9 @@
 const orders = [];
 
+export function getOrdersLength() {
+  return orders.length;
+}
+
 export function getAllOrders() {
   return orders;
 }
