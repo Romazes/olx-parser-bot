@@ -38,4 +38,31 @@ export async function scrapeOLX(search) {
   }
 }
 
-export default scrapeOLX;
+export async function parseOLXCategories(subCategoryId) {
+  try {
+    const response = await axios.get(olxURL);
+
+    const $ = load(response.data);
+
+    const categories = $(`[data-subcategory="${subCategoryId}"]`);
+
+    const mainTitle = categories.children().children().attr("href");
+
+    console.log(`mainTitle link: ${mainTitle}`);
+
+    categories
+      .children("ul")
+      .children("li")
+      .each((index, element) => {
+        if ($(element).hasClass("clear")) {
+          return;
+        }
+
+        const categoryLink = new URL($(element).find("a").attr("href"));
+        const subTitle = categoryLink.pathname.split('/')[2];
+        console.log(`"${subTitle}" : "${categoryLink.pathname}"`);
+      });
+  } catch (error) {
+    console.error("Failed to retrieve the page:", error.message);
+  }
+}
