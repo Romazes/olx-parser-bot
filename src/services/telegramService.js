@@ -3,6 +3,7 @@ import { scrapeOLX, updateOlxAdvertisement } from "./olxService.js";
 import { olxCategories } from "../models/olxModel.js";
 import {
   createNewSubscription,
+  deleteSubscriptionByUserIdAndIndex,
   getListSubscriptionByUserId,
   getSubscriptionByUserIdAndIndex,
 } from "../models/subscriptionModel.js";
@@ -24,10 +25,13 @@ bot.on("message", (msg) => {
         "Щоб створити підписку, напишіть,\nнаприклад:\n/add <category> nike \n/add <category> air force"
       );
       return;
+    case "/delete":
+      bot.sendMessage(chatId, "Щоб видалити підписку, напишіть:\n/delete <id>");
+      return;
     case "/list":
       const userSubscriptions = getListSubscriptionByUserId(userID);
 
-      if (!userSubscriptions) {
+      if (!userSubscriptions || userSubscriptions.length === 0) {
         bot.sendMessage(
           chatId,
           "👀 Активні підписки:\nНажаль, немає активних підписок"
@@ -60,6 +64,16 @@ bot.on("message", (msg) => {
         `Щоб оновити підписку і получити нові оголошення. Наприклад:\n/update 1, де '1' номер вашой підписки див. /list`
       );
       return;
+  }
+
+  if(messageText.startsWith("/delete")) {
+    const splitMessageText = messageText.split(" ");
+
+    const res = deleteSubscriptionByUserIdAndIndex(userID, splitMessageText[1]);
+
+    bot.sendMessage(chatId, `Підписку було видалено ${res ? "успішно" : "не успішно (спробуйте ще раз)"}`);
+
+    return;
   }
 
   if (messageText.startsWith("/update")) {
