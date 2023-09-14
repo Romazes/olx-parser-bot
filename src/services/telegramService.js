@@ -4,6 +4,7 @@ import { olxCategories } from "../models/olxModel.js";
 import {
   createNewSubscription,
   deleteSubscriptionByUserIdAndIndex,
+  getAllUserSubscriptions,
   getListSubscriptionByUserId,
   getSubscriptionByUserIdAndIndex,
 } from "../models/subscriptionModel.js";
@@ -150,6 +151,21 @@ function UpdateUserSubscription(userId, userSubscription) {
       bot.sendMessage(userId, message, { parse_mode: "Markdown" });
     })
     .catch((e) => bot.sendMessage(userId, e.message));
+}
+
+export function UpdateUserSubscriptions() {
+  const usersSubs = getAllUserSubscriptions();
+
+  for (const userId in usersSubs) {
+    const userSubscriptions = usersSubs[userId];
+    for (const prop in userSubscriptions) {
+      if (userSubscriptions[prop].length > 0) {
+        userSubscriptions[prop].forEach((subs) => {
+          UpdateUserSubscription(userId, subs);
+        });
+      }
+    }
+  }
 }
 
 export default bot;
