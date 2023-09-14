@@ -8,6 +8,10 @@ export function createNewSubscription(userId, searchKeyWords) {
   }
 }
 
+export function getAllUserSubscriptions() {
+  return subscriptions;
+}
+
 export function getListSubscriptionByUserId(userId) {
   return subscriptions[userId]?.searchKeyWords;
 }
