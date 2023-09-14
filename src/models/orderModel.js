@@ -9,9 +9,6 @@ export function getOrderByOrderId(orderId) {
 }
 
 export function createOrder(order) {
-  if(!orders[order.orderId]) {
     orders[order.orderId] = { title: order.orderTitle, link: order.orderLink };
-    return true;
-  }
-  return false;
+    return orders[order.orderId];
 }

@@ -19,7 +19,7 @@ export async function updateOlxAdvertisement(categoryUrlPath, searchKeyWords, sk
 
     const userAds = $('[data-testid="listing-grid"]');
 
-    let counter = 0;
+    const newOrders = [];
     userAds.children('[data-cy="l-card"]').each((index, element) => {
       const orderId = $(element).attr("id");
       const orderLink = olxURL + $(element).children("a").attr("href");
@@ -32,12 +32,13 @@ export async function updateOlxAdvertisement(categoryUrlPath, searchKeyWords, sk
       }
 
       if(!getOrderByOrderId(orderId) && (skipTopAds && !isTopAd)) {
-        createOrder({ orderId, orderLink, orderTitle }) ? counter++ : counter + 0;
+        const newOrder = createOrder({ orderId, orderLink, orderTitle });
+        newOrders.push(newOrder);
       }
 
     });
   
-    return counter;
+    return newOrders;
 }
 
 export async function scrapeOLX(categoryUrlPath, searchKeyWords) {

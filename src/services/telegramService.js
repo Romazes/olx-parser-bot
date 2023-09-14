@@ -111,9 +111,19 @@ bot.on("message", (msg) => {
     const searchKeyWords = userSubscription.slice(1);
 
     updateOlxAdvertisement(categoryUrlPath, searchKeyWords, true)
-      .then((result) =>
-        bot.sendMessage(chatId, `Було додано ${result} оголошень`)
-      )
+      .then((result) => {
+        const amountNewOrders = result.length;
+        if (amountNewOrders === 0) {
+          bot.sendMessage(
+            chatId,
+            `Немає нових оголошень по ${userSubscription.join(" ")}`
+          );
+          return;
+        }
+
+        const message = result.map((item, index) => `${index}. [${item.title}](${item.link})`).join('\n\n');
+        bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
+      })
       .catch((e) => bot.sendMessage(chatId, e.message));
   }
 
