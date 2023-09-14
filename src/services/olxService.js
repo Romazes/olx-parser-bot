@@ -12,11 +12,6 @@ export async function updateOlxAdvertisement(categoryUrlPath, searchKeyWords, sk
 
   const $ = load(response.data);
 
-  const amountUserAds = $('[data-testid="listing-count-msg"]')
-    .children()
-    .text()
-    .match(/\d+/);
-
     const userAds = $('[data-testid="listing-grid"]');
 
     const newOrders = [];
