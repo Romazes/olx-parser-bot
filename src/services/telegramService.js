@@ -121,7 +121,9 @@ bot.on("message", (msg) => {
           return;
         }
 
-        const message = result.map((item, index) => `${index}. [${item.title}](${item.link})`).join('\n\n');
+        const message = result
+          .map((item, index) => `${index}. [${item.title}](${item.link})`)
+          .join("\n\n");
         bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
       })
       .catch((e) => bot.sendMessage(chatId, e.message));
@@ -144,16 +146,14 @@ bot.on("message", (msg) => {
       return;
     }
 
-    // ADD to temp subscriptions array
-    createNewSubscription(userID, splitMessageText.slice(1));
-
     scrapeOLX(categoryUrlPath, searchKeyWords)
-      .then((result) =>
+      .then((result) => {
+        createNewSubscription(userID, splitMessageText.slice(1));
         bot.sendMessage(
           chatId,
           `Успішно було додано ${result} оголошень до бази даних`
-        )
-      )
+        );
+      })
       .catch((e) => bot.sendMessage(chatId, e.message));
   }
 });
