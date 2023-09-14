@@ -66,12 +66,17 @@ bot.on("message", (msg) => {
       return;
   }
 
-  if(messageText.startsWith("/delete")) {
+  if (messageText.startsWith("/delete")) {
     const splitMessageText = messageText.split(" ");
 
     const res = deleteSubscriptionByUserIdAndIndex(userID, splitMessageText[1]);
 
-    bot.sendMessage(chatId, `Підписку було видалено ${res ? "успішно" : "не успішно (спробуйте ще раз)"}`);
+    bot.sendMessage(
+      chatId,
+      `Підписку було видалено ${
+        res ? "успішно" : "не успішно (спробуйте ще раз)"
+      }`
+    );
 
     return;
   }
@@ -92,26 +97,7 @@ bot.on("message", (msg) => {
       return;
     }
 
-    const categoryUrlPath = olxCategories[userSubscription[0]];
-    const searchKeyWords = userSubscription.slice(1);
-
-    updateOlxAdvertisement(categoryUrlPath, searchKeyWords, true)
-      .then((result) => {
-        const amountNewOrders = result.length;
-        if (amountNewOrders === 0) {
-          bot.sendMessage(
-            chatId,
-            `Немає нових оголошень по ${userSubscription.join(" ")}`
-          );
-          return;
-        }
-
-        const message = result
-          .map((item, index) => `${index}. [${item.title}](${item.link})`)
-          .join("\n\n");
-        bot.sendMessage(chatId, message, { parse_mode: "Markdown" });
-      })
-      .catch((e) => bot.sendMessage(chatId, e.message));
+    UpdateUserSubscription(chatId, userSubscription);
   }
 
   if (messageText.startsWith("/add")) {
@@ -142,5 +128,28 @@ bot.on("message", (msg) => {
       .catch((e) => bot.sendMessage(chatId, e.message));
   }
 });
+
+function UpdateUserSubscription(userId, userSubscription) {
+  const categoryUrlPath = olxCategories[userSubscription[0]];
+  const searchKeyWords = userSubscription.slice(1);
+
+  updateOlxAdvertisement(categoryUrlPath, searchKeyWords, true)
+    .then((result) => {
+      const amountNewOrders = result.length;
+      if (amountNewOrders === 0) {
+        bot.sendMessage(
+          userId,
+          `Немає нових оголошень по ${userSubscription.join(" ")}`
+        );
+        return;
+      }
+
+      const message = result
+        .map((item, index) => `${index}. [${item.title}](${item.link})`)
+        .join("\n\n");
+      bot.sendMessage(userId, message, { parse_mode: "Markdown" });
+    })
+    .catch((e) => bot.sendMessage(userId, e.message));
+}
 
 export default bot;
