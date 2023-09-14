@@ -110,7 +110,7 @@ bot.on("message", (msg) => {
     const categoryUrlPath = olxCategories[userSubscription[0]];
     const searchKeyWords = userSubscription.slice(1);
 
-    updateOlxAdvertisement(categoryUrlPath, searchKeyWords)
+    updateOlxAdvertisement(categoryUrlPath, searchKeyWords, true)
       .then((result) =>
         bot.sendMessage(chatId, `Було додано ${result} оголошень`)
       )

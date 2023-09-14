@@ -1,19 +1,17 @@
-const orders = [];
+const orders = {};
 
 export function getOrdersLength() {
-  return orders.length;
-}
-
-export function getAllOrders() {
-  return orders;
+  return Object.keys(orders).length;
 }
 
 export function getOrderByOrderId(orderId) {
-  return orders.find((o) => o.orderId == orderId);
+  return orders[orderId];
 }
 
 export function createOrder(order) {
-  const newOrder = { id: orders.length + 1, ...order };
-  orders.push(newOrder);
-  return newOrder;
+  if(!orders[order.orderId]) {
+    orders[order.orderId] = { title: order.orderTitle, link: order.orderLink };
+    return true;
+  }
+  return false;
 }

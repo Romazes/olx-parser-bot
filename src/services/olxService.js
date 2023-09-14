@@ -3,7 +3,7 @@ import { load } from "cheerio";
 import { createOrder, getOrderByOrderId, getOrdersLength } from "../models/orderModel.js";
 import { olxSearchFilter, olxURL } from "../models/olxModel.js";
 
-export async function updateOlxAdvertisement(categoryUrlPath, searchKeyWords) {
+export async function updateOlxAdvertisement(categoryUrlPath, searchKeyWords, skipTopAds) {
   const pathParam = "q-" + searchKeyWords.join("-") + "/";
   const queryParam = "?" + olxSearchFilter["new_ones"];
   const response = await axios.get(
@@ -25,13 +25,16 @@ export async function updateOlxAdvertisement(categoryUrlPath, searchKeyWords) {
       const orderLink = olxURL + $(element).children("a").attr("href");
       const orderTitle = $(element).find("h6").text();
 
-      if(getOrderByOrderId(orderId)) {
-        console.log(`Order exist by ID: ${orderId}`);
+      //Do you want skip the Top ad ?
+      const isTopAd = $(element).find('[data-testid="adCard-featured"]').length > 0;
+      if(skipTopAds && isTopAd) {
+        return;
       }
-      else {
-        createOrder({ orderId, orderLink, orderTitle });
-        counter++;
+
+      if(!getOrderByOrderId(orderId) && (skipTopAds && !isTopAd)) {
+        createOrder({ orderId, orderLink, orderTitle }) ? counter++ : counter + 0;
       }
+
     });
   
     return counter;
