@@ -1,5 +1,4 @@
-import "dotenv/config";
-import TelegramBot from "node-telegram-bot-api";
+import bot, { isUserAllowed } from "./../models/telegramBotModel.js";
 import { scrapeOLX, updateOlxAdvertisement } from "./olxService.js";
 import { olxCategories } from "../models/olxModel.js";
 import {
@@ -7,34 +6,6 @@ import {
   getListSubscriptionByUserId,
   getSubscriptionByUserIdAndIndex,
 } from "../models/subscriptionModel.js";
-
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: true });
-const allowedUserIds = process.env.TELEGRAM_BOT_ID_RESTRICT_LIST;
-
-const BOT_COMMANDS = [
-  {
-    command: "hello",
-    description: "Вітання",
-  },
-  {
-    command: "list",
-    description: "Список активних підписок",
-  },
-  {
-    command: "add",
-    description: "Додати підписку за ключовою фразою",
-  },
-  {
-    command: "categories",
-    description: "Список доступник категорій для підписки",
-  },
-  {
-    command: "update",
-    description: "Оновити підписку по ід",
-  },
-];
-
-await bot.setMyCommands(BOT_COMMANDS);
 
 bot.on("message", (msg) => {
   const userID = msg.from.id;
@@ -157,9 +128,5 @@ bot.on("message", (msg) => {
       .catch((e) => bot.sendMessage(chatId, e.message));
   }
 });
-
-function isUserAllowed(userId) {
-  return allowedUserIds.includes(userId);
-}
 
 export default bot;
