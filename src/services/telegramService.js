@@ -23,7 +23,7 @@ bot.on("message", (msg) => {
     case "/add":
       bot.sendMessage(
         chatId,
-        "Щоб створити підписку, напишіть,\nнаприклад:\n/add <category> nike \n/add <category> air force"
+        "Щоб створити підписку, напишіть,\nнаприклад:\n/add category nike \n/add category air force"
       );
       return;
     case "/delete":
@@ -140,7 +140,8 @@ function UpdateUserSubscription(userId, userSubscription) {
       if (amountNewOrders === 0) {
         bot.sendMessage(
           userId,
-          `Немає нових оголошень по ${userSubscription.join(" ")}`
+          `Немає нових оголошень по ${userSubscription.join(" ")}`,
+          { disable_notification: true }
         );
         return;
       }
