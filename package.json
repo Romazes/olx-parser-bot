@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "debug": "node --inspect index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "update:heroku": "git push heroku master && heroku restart"
   },
   "type": "module",
   "author": "",
