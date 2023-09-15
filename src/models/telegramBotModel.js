@@ -4,7 +4,7 @@ import TelegramBot from "node-telegram-bot-api";
 let bot;
 
 if (process.env.NODE_ENV === "production") {
-  bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
+  bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
   bot.setWebHook(process.env.HEROKU_URL + process.env.TELEGRAM_BOT_TOKEN);
 } else {
   bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
