@@ -1,5 +1,8 @@
 import bot, { isUserAllowed } from "./../models/telegramBotModel.js";
-import { scrapeOLX, updateOlxAdvertisement } from "./olxService.js";
+import {
+  searchOlxAdvertisements,
+  updateOlxAdvertisement,
+} from "./olxService.js";
 import { olxCategories } from "../models/olxModel.js";
 import {
   createNewSubscription,
@@ -8,8 +11,11 @@ import {
   getListSubscriptionByUserId,
   getSubscriptionByUserIdAndIndex,
 } from "../models/subscriptionModel.js";
+import { createNewProduct, getProductById } from "../models/productModel.js";
 
-bot.on("message", (msg) => {
+bot.on("polling_error", (msg) => console.log(msg));
+
+bot.on("message", async (msg) => {
   const userID = msg.from.id;
   const messageText = msg.text.toString().toLowerCase();
   const chatId = msg.chat.id;
@@ -21,7 +27,10 @@ bot.on("message", (msg) => {
 
   switch (messageText) {
     case "/hello":
-      return bot.sendMessage(userID, `Привіт, ${msg.from.first_name}\nНехай цей день стане найкращим у твоєму житті.`);
+      return bot.sendMessage(
+        userID,
+        `Привіт, ${msg.from.first_name}\nНехай цей день стане найкращим у твоєму житті.`
+      );
     case "/add":
       bot.sendMessage(
         chatId,
@@ -100,15 +109,16 @@ bot.on("message", (msg) => {
       return;
     }
 
-    UpdateUserSubscription(chatId, userSubscription);
+    UpdateUserSubscriptionAsync(chatId, userSubscription);
   }
 
   if (messageText.startsWith("/add")) {
     // ["/add", "category", "search key words"]
     const splitMessageText = messageText.split(" ");
-
-    const categoryUrlPath = olxCategories[splitMessageText[1]];
+    const category = splitMessageText[1];
     const searchKeyWords = splitMessageText.slice(2);
+
+    const categoryUrlPath = olxCategories[category];
 
     if (!categoryUrlPath) {
       bot.sendMessage(chatId, "Grammar Nazi, категорію введено невірно");
@@ -120,35 +130,67 @@ bot.on("message", (msg) => {
       return;
     }
 
-    scrapeOLX(categoryUrlPath, searchKeyWords)
-      .then((result) => {
-        createNewSubscription(userID, splitMessageText.slice(1));
-        bot.sendMessage(
-          chatId,
-          `Успішно було додано ${result} оголошень до бази даних`
-        );
-      })
-      .catch((e) => bot.sendMessage(chatId, e.message));
+    try {
+      const products = await searchOlxAdvertisements(
+        categoryUrlPath,
+        searchKeyWords
+      );
+
+      products.forEach(({ id, link, title }) =>
+        createNewProduct(category, { id, link, title })
+      );
+
+      const categorySearchKeyWords = splitMessageText.slice(1);
+
+      createNewSubscription(userID, categorySearchKeyWords);
+
+      bot.sendMessage(
+        chatId,
+        `Успішно було додано підписку\n${categorySearchKeyWords.join(" ")}`
+      );
+    } catch (error) {
+      console.error(`userId: ${userID} msg: ${messageText}\n${error.message}`)
+    }
   }
 });
 
-function UpdateUserSubscription(userId, userSubscription) {
+async function UpdateUserSubscriptionAsync(userId, userSubscription) {
   const categoryUrlPath = olxCategories[userSubscription[0]];
   const searchKeyWords = userSubscription.slice(1);
 
-  updateOlxAdvertisement(categoryUrlPath, searchKeyWords, true)
-    .then((result) => {
-      const amountNewOrders = result.length;
-      if (amountNewOrders === 0) {
-        return;
-      }
+  try {
+    const updatedProducts = await updateOlxAdvertisement(
+      categoryUrlPath,
+      searchKeyWords,
+      true
+    );
 
-      const message = result
-        .map((item, index) => `${index}. [${item.title}](${item.link})`)
-        .join("\n\n");
-      bot.sendMessage(userId, message, { parse_mode: "Markdown" });
-    })
-    .catch((e) => bot.sendMessage(userId, e.message));
+    if (updatedProducts.length == 0) {
+      return;
+    }
+
+    const newProduct = [];
+
+    for (let i = 0; i < updatedProducts.length; i++) {
+      if (!getProductById(userSubscription[0], updatedProducts[i].id)) {
+        const { id, link, title } = updatedProducts[i];
+        newProduct.push(
+          createNewProduct(userSubscription[0], { id, link, title })
+        );
+      }
+    }
+
+    if (newProduct.length == 0) {
+      return;
+    }
+
+    const message = newProduct
+      .map((item, index) => `${index}. [${item.title}](${item.link})`)
+      .join("\n\n");
+    return bot.sendMessage(userId, message, { parse_mode: "Markdown" });
+  } catch (error) {
+    console.error(`userId: ${userId} \n${error.message}`)
+  }
 }
 
 export function UpdateUserSubscriptions() {
@@ -158,8 +200,8 @@ export function UpdateUserSubscriptions() {
     const userSubscriptions = usersSubs[userId];
     for (const prop in userSubscriptions) {
       if (userSubscriptions[prop].length > 0) {
-        userSubscriptions[prop].forEach((subs) => {
-          UpdateUserSubscription(userId, subs);
+        userSubscriptions[prop].forEach(async (subs) => {
+          await UpdateUserSubscriptionAsync(userId, subs);
         });
       }
     }

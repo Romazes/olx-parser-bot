@@ -1,9 +1,12 @@
 import axios from "axios";
 import { load } from "cheerio";
-import { createOrder, getOrderByOrderId, getOrdersLength } from "../models/orderModel.js";
 import { olxSearchFilter, olxURL } from "../models/olxModel.js";
 
-export async function updateOlxAdvertisement(categoryUrlPath, searchKeyWords, skipTopAds) {
+export async function updateOlxAdvertisement(
+  categoryUrlPath,
+  searchKeyWords,
+  skipTopAds
+) {
   const pathParam = "q-" + searchKeyWords.join("-") + "/";
   const queryParam = "?" + olxSearchFilter["new_ones"];
   const response = await axios.get(
@@ -11,60 +14,50 @@ export async function updateOlxAdvertisement(categoryUrlPath, searchKeyWords, sk
   );
 
   const $ = load(response.data);
-
-    const userAds = $('[data-testid="listing-grid"]');
-
-    const newOrders = [];
-    userAds.children('[data-cy="l-card"]').each((index, element) => {
-      const orderId = $(element).attr("id");
-      const orderLink = olxURL + $(element).children("a").attr("href");
-      const orderTitle = $(element).find("h6").text();
-
-      //Do you want skip the Top ad ?
-      const isTopAd = $(element).find('[data-testid="adCard-featured"]').length > 0;
-      if(skipTopAds && isTopAd) {
-        return;
-      }
-
-      if(!getOrderByOrderId(orderId) && (skipTopAds && !isTopAd)) {
-        const newOrder = createOrder({ orderId, orderLink, orderTitle });
-        newOrders.push(newOrder);
-      }
-
-    });
-  
-    return newOrders;
-}
-
-export async function scrapeOLX(categoryUrlPath, searchKeyWords) {
-  const pathParam = "q-" + searchKeyWords.join("-") + "/";
-  const queryParam = "?" + olxSearchFilter["new_ones"];
-  const response = await axios.get(
-    olxURL + categoryUrlPath + pathParam + queryParam
-  );
-
-  const $ = load(response.data);
-
-  const amountUserAds = $('[data-testid="listing-count-msg"]')
-    .children()
-    .text()
-    .match(/\d+/);
-
-  if (amountUserAds[0] <= 0) {
-    throw new Error("За цими ключовими словами не знайдено оголошень");
-  }
 
   const userAds = $('[data-testid="listing-grid"]');
 
+  const products = [];
   userAds.children('[data-cy="l-card"]').each((index, element) => {
-    const orderId = $(element).attr("id");
-    const orderLink = olxURL + $(element).children("a").attr("href");
-    const orderTitle = $(element).find("h6").text();
+    const id = $(element).attr("id");
+    const link = olxURL + $(element).children("a").attr("href");
+    const title = $(element).find("h6").text();
 
-    createOrder({ orderId, orderLink, orderTitle });
+    //Do you want skip the Top ad ?
+    const isTopAd =
+      $(element).find('[data-testid="adCard-featured"]').length > 0;
+    if (skipTopAds && isTopAd) {
+      return;
+    }
+
+    products.push({ id, link, title });
   });
 
-  return getOrdersLength();
+  return products;
+}
+
+export async function searchOlxAdvertisements(categoryUrlPath, searchKeyWords) {
+  const pathParam = "q-" + searchKeyWords.join("-") + "/";
+  const queryParam = "?" + olxSearchFilter["new_ones"];
+  const response = await axios.get(
+    olxURL + categoryUrlPath + pathParam + queryParam
+  );
+
+  const $ = load(response.data);
+
+  if (getAdvertisementAmount($, '[data-testid="listing-count-msg"]') <= 0) {
+    throw new Error("За цими ключовими словами не знайдено оголошень");
+  }
+
+  const products = [];
+  $('[data-testid="listing-grid"]').children('[data-cy="l-card"]').each((index, element) => {
+    const id = $(element).attr("id");
+    const link = olxURL + $(element).children("a").attr("href");
+    const title = $(element).find("h6").text();
+
+    products.push({ id, link, title });
+  });
+  return products;
 }
 
 /**
@@ -102,4 +95,8 @@ export async function parseOLXCategories(subCategoryId) {
   } catch (error) {
     console.error("Failed to retrieve the page:", error.message);
   }
+}
+
+function getAdvertisementAmount(loadedDocument, selector) {
+  return loadedDocument(selector).children().text().match(/\d+/)[0];
 }
