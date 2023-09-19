@@ -140,11 +140,6 @@ function UpdateUserSubscription(userId, userSubscription) {
     .then((result) => {
       const amountNewOrders = result.length;
       if (amountNewOrders === 0) {
-        bot.sendMessage(
-          userId,
-          `Немає нових оголошень по ${userSubscription.join(" ")}`,
-          { disable_notification: true }
-        );
         return;
       }
 
