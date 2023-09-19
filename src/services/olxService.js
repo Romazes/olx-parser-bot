@@ -56,14 +56,6 @@ export async function scrapeOLX(categoryUrlPath, searchKeyWords) {
 
   const userAds = $('[data-testid="listing-grid"]');
 
-  // TODO: should I add this ?
-  // queryParam: page=
-  // const amountPages = $('[data-testid="pagination-wrapper"]')
-  //   .children("ul")
-  //   .children("li")
-  //   .last()
-  //   .text();
-
   userAds.children('[data-cy="l-card"]').each((index, element) => {
     const orderId = $(element).attr("id");
     const orderLink = olxURL + $(element).children("a").attr("href");
