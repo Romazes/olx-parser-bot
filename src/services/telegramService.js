@@ -20,6 +20,8 @@ bot.on("message", (msg) => {
   }
 
   switch (messageText) {
+    case "/hello":
+      return bot.sendMessage(userID, `Привіт, ${msg.from.first_name}\nНехай цей день стане найкращим у твоєму житті.`);
     case "/add":
       bot.sendMessage(
         chatId,
