@@ -16,11 +16,11 @@ import { createNewProduct, getProductById } from "../models/productModel.js";
 bot.on("polling_error", (msg) => console.log(msg));
 
 bot.on("message", async (msg) => {
-  const userID = msg.from.id;
+  const userId = msg.from.id;
   const messageText = msg.text.toString().toLowerCase();
   const chatId = msg.chat.id;
 
-  if (!isUserAllowed(userID)) {
+  if (!isUserAllowed(userId)) {
     bot.sendMessage(chatId, "Sorry, you are not authorized to use this bot.");
     return;
   }
@@ -28,7 +28,7 @@ bot.on("message", async (msg) => {
   switch (messageText) {
     case "/hello":
       return bot.sendMessage(
-        userID,
+        userId,
         `Привіт, ${msg.from.first_name}\nНехай цей день стане найкращим у твоєму житті.`
       );
     case "/add":
@@ -41,7 +41,7 @@ bot.on("message", async (msg) => {
       bot.sendMessage(chatId, "Щоб видалити підписку, напишіть:\n/delete <id>");
       return;
     case "/list":
-      const userSubscriptions = getListSubscriptionByUserId(userID);
+      const userSubscriptions = getListSubscriptionByUserId(userId);
 
       if (!userSubscriptions || userSubscriptions.length === 0) {
         bot.sendMessage(
@@ -81,7 +81,7 @@ bot.on("message", async (msg) => {
   if (messageText.startsWith("/delete")) {
     const splitMessageText = messageText.split(" ");
 
-    const res = deleteSubscriptionByUserIdAndIndex(userID, splitMessageText[1]);
+    const res = deleteSubscriptionByUserIdAndIndex(userId, splitMessageText[1]);
 
     bot.sendMessage(
       chatId,
@@ -97,7 +97,7 @@ bot.on("message", async (msg) => {
     const splitMessageText = messageText.split(" ");
 
     const userSubscription = getSubscriptionByUserIdAndIndex(
-      userID,
+      userId,
       splitMessageText[1]
     );
 
@@ -137,19 +137,19 @@ bot.on("message", async (msg) => {
       );
 
       products.forEach(({ id, link, title }) =>
-        createNewProduct(category, { id, link, title })
+        createNewProduct(userId, category, { id, link, title })
       );
 
       const categorySearchKeyWords = splitMessageText.slice(1);
 
-      createNewSubscription(userID, categorySearchKeyWords);
+      createNewSubscription(userId, categorySearchKeyWords);
 
       bot.sendMessage(
         chatId,
         `Успішно було додано підписку\n${categorySearchKeyWords.join(" ")}`
       );
     } catch (error) {
-      console.error(`userId: ${userID} msg: ${messageText}\n${error.message}`)
+      console.error(`userId: ${userId} msg: ${messageText}\n${error.message}`)
     }
   }
 });
@@ -172,10 +172,10 @@ async function UpdateUserSubscriptionAsync(userId, userSubscription) {
     const newProduct = [];
 
     for (let i = 0; i < updatedProducts.length; i++) {
-      if (!getProductById(userSubscription[0], updatedProducts[i].id)) {
+      if (!getProductById(userId, userSubscription[0], updatedProducts[i].id)) {
         const { id, link, title } = updatedProducts[i];
         newProduct.push(
-          createNewProduct(userSubscription[0], { id, link, title })
+          createNewProduct(userId, userSubscription[0], { id, link, title })
         );
       }
     }
