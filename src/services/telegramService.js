@@ -149,7 +149,13 @@ bot.on("message", async (msg) => {
         `Успішно було додано підписку\n${categorySearchKeyWords.join(" ")}`
       );
     } catch (error) {
-      console.error(`userId: ${userId} msg: ${messageText}\n${error.message}`)
+      if (error.message == "За цими ключовими словами не знайдено оголошень") {
+        bot.sendMessage(userId, error.message);
+      } else {
+        console.error(
+          `userId: ${userId} msg: ${messageText}\n${error.message}`
+        );
+      }
     }
   }
 });
@@ -189,7 +195,7 @@ async function UpdateUserSubscriptionAsync(userId, userSubscription) {
       .join("\n\n");
     return bot.sendMessage(userId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    console.error(`userId: ${userId} \n${error.message}`)
+    console.error(`userId: ${userId} \n${error.message}`);
   }
 }
 
