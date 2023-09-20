@@ -39,7 +39,7 @@ export function cleanAncientProductsByCategory() {
         );
         productsByUserIdByCategory[userId][category].splice(0, productsAmount.length / 2);
         console.log(
-          `cleanAncientProductsByCategory(): AfterLength:${productsAmount}`
+          `cleanAncientProductsByCategory(): AfterLength:${ productsByUserIdByCategory[userId][category].length}`
         );
       }
     }
