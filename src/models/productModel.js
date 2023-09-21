@@ -37,7 +37,7 @@ export function cleanAncientProductsByCategory() {
         console.log(
           `cleanAncientProductsByCategory(): beforeLength:${productsAmount}`
         );
-        productsByUserIdByCategory[userId][category].splice(0, productsAmount.length / 2);
+        productsByUserIdByCategory[userId][category].splice(0, productsAmount / 2);
         console.log(
           `cleanAncientProductsByCategory(): AfterLength:${ productsByUserIdByCategory[userId][category].length}`
         );
