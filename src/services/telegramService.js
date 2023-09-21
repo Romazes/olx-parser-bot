@@ -137,11 +137,11 @@ bot.on("message", async (msg) => {
       );
 
       products.forEach(({ id, link, title }) =>
-        createNewProduct(userId, category, { id, link, title })
+        createNewProduct(userId, category, searchKeyWords, { id, link, title })
       );
 
       const categorySearchKeyWords = splitMessageText.slice(1);
-
+      
       createNewSubscription(userId, categorySearchKeyWords);
 
       bot.sendMessage(
@@ -178,10 +178,16 @@ async function UpdateUserSubscriptionAsync(userId, userSubscription) {
     const newProduct = [];
 
     for (let i = 0; i < updatedProducts.length; i++) {
-      if (!getProductById(userId, userSubscription[0], updatedProducts[i].id)) {
+      if (!getProductById(userId, userSubscription[0], searchKeyWords, updatedProducts[i].id)) {
         const { id, link, title } = updatedProducts[i];
         newProduct.push(
-          createNewProduct(userId, userSubscription[0], { id, link, title })
+          createNewProduct(
+            userId,
+            userSubscription[0],
+            searchKeyWords,
+            { id, link, title },
+            true
+          )
         );
       }
     }
