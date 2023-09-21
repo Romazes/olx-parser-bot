@@ -1,5 +1,3 @@
-const ALLOWED_QUANTITY = 1000;
-
 const productsByUserIdByCategory = {};
 
 export function getProductById(userId, category, itemId) {
@@ -26,22 +24,4 @@ export function createNewProduct(userId, category, item) {
   }
 
   return newProduct;
-}
-
-export function cleanAncientProductsByCategory() {
-  for (const userId in productsByUserIdByCategory) {
-    const categories = productsByUserIdByCategory[userId];
-    for (const category in categories) {
-      const productsAmount = productsByUserIdByCategory[userId][category].length;
-      if (productsAmount > ALLOWED_QUANTITY) {
-        console.log(
-          `cleanAncientProductsByCategory(): beforeLength:${productsAmount}`
-        );
-        productsByUserIdByCategory[userId][category].splice(0, productsAmount / 2);
-        console.log(
-          `cleanAncientProductsByCategory(): AfterLength:${ productsByUserIdByCategory[userId][category].length}`
-        );
-      }
-    }
-  }
 }

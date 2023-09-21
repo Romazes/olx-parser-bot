@@ -2,7 +2,6 @@ import express from "express";
 import bot from "./src/models/telegramBotModel.js";
 import { UpdateUserSubscriptions } from "./src/services/telegramService.js";
 import { scheduleJob } from "node-schedule";
-import { cleanAncientProductsByCategory } from "./src/models/productModel.js";
 
 const app = express();
 
@@ -14,10 +13,6 @@ app.get("/", function (req, res) {
 
 const scheduleTask = scheduleJob("* * * * *", () => {
   UpdateUserSubscriptions();
-});
-
-const scheduleTask2 = scheduleJob("0 */1 * * *", () => {
-  cleanAncientProductsByCategory();
 });
 
 const server = app.listen(process.env.PORT, "0.0.0.0", () => {
