@@ -49,3 +49,19 @@ export function createNewProduct(
 
   return newProduct;
 }
+
+export function deleteProductsByUserIdByCategoryBySearchKeyWords(
+  userId,
+  category,
+  searchKeyWords
+) {
+  if (
+    productsByUserIdByCategory[userId] &&
+    productsByUserIdByCategory[userId][category] &&
+    productsByUserIdByCategory[userId][category][searchKeyWords]
+  ) {
+    productsByUserIdByCategory[userId][category][searchKeyWords] = null;
+    return true;
+  }
+  return false;
+}

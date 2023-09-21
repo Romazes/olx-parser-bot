@@ -11,7 +11,7 @@ import {
   getListSubscriptionByUserId,
   getSubscriptionByUserIdAndIndex,
 } from "../models/subscriptionModel.js";
-import { createNewProduct, getProductById } from "../models/productModel.js";
+import { createNewProduct, deleteProductsByUserIdByCategoryBySearchKeyWords, getProductById } from "../models/productModel.js";
 
 bot.on("polling_error", (msg) => console.log(msg));
 
@@ -81,16 +81,37 @@ bot.on("message", async (msg) => {
   if (messageText.startsWith("/delete")) {
     const splitMessageText = messageText.split(" ");
 
-    const res = deleteSubscriptionByUserIdAndIndex(userId, splitMessageText[1]);
-
-    bot.sendMessage(
-      chatId,
-      `Підписку було видалено ${
-        res ? "успішно" : "не успішно (спробуйте ще раз)"
-      }`
+    const userSubscription = getSubscriptionByUserIdAndIndex(
+      userId,
+      splitMessageText[1]
     );
 
-    return;
+    if (!userSubscription) {
+      return bot.sendMessage(
+        chatId,
+        "Grammar Nazi, немає такої підписки, спробуй ще раз."
+      );
+    }
+
+    const isProductsListRemoved =
+      deleteProductsByUserIdByCategoryBySearchKeyWords(
+        userId,
+        userSubscription[0],
+        userSubscription[1]
+      );
+    const isSubscriptionRemoved = deleteSubscriptionByUserIdAndIndex(
+      userId,
+      splitMessageText[1]
+    );
+
+    return bot.sendMessage(
+      chatId,
+      `Підписку було видалено ${
+        isSubscriptionRemoved && isProductsListRemoved
+          ? "успішно"
+          : "не успішно (спробуйте ще раз)"
+      }`
+    );
   }
 
   if (messageText.startsWith("/update")) {
@@ -141,7 +162,7 @@ bot.on("message", async (msg) => {
       );
 
       const categorySearchKeyWords = splitMessageText.slice(1);
-      
+
       createNewSubscription(userId, categorySearchKeyWords);
 
       bot.sendMessage(
