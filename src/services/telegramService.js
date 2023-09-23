@@ -13,7 +13,17 @@ import {
 } from "../models/subscriptionModel.js";
 import { createNewProduct, deleteProductsByUserIdByCategoryBySearchKeyWords, getProductById } from "../models/productModel.js";
 
-bot.on("polling_error", (msg) => console.log(msg));
+bot.on("polling_error", (msg) => console.log(`polling_error:${msg}`));
+
+bot.on("webhook_error", (msg) => console.log(`webhook_error: ${msg}`));
+
+bot.on('error', (error) => {
+  if (error.message.includes('socket hang up')) {
+    console.error('Socket hang up error occurred:', error);
+  } else {
+    console.error('Error occurred:', error);
+  }
+});
 
 bot.on("message", async (msg) => {
   const userId = msg.from.id;
