@@ -93,7 +93,7 @@ export async function parseOLXCategories(subCategoryId) {
         console.log(`"${subTitle}" : "${categoryLink.pathname}"`);
       });
   } catch (error) {
-    console.error("Failed to retrieve the page:", error.message);
+    console.log("Failed to retrieve the page:", error.message);
   }
 }
 

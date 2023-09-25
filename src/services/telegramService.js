@@ -19,9 +19,9 @@ bot.on("webhook_error", (msg) => console.log(`webhook_error: ${msg}`));
 
 bot.on('error', (error) => {
   if (error.message.includes('socket hang up')) {
-    console.error('Socket hang up error occurred:', error);
+    console.log('Socket hang up error occurred:', error);
   } else {
-    console.error('Error occurred:', error);
+    console.log('Error occurred:', error);
   }
 });
 
@@ -183,7 +183,7 @@ bot.on("message", async (msg) => {
       if (error.message == "За цими ключовими словами не знайдено оголошень") {
         bot.sendMessage(userId, error.message);
       } else {
-        console.error(
+        console.log(
           `userId: ${userId} msg: ${messageText}\n${error.message}`
         );
       }
@@ -232,7 +232,7 @@ async function UpdateUserSubscriptionAsync(userId, userSubscription) {
       .join("\n\n");
     return bot.sendMessage(userId, message, { parse_mode: "Markdown" });
   } catch (error) {
-    console.error(`userId: ${userId} \n${error.message}`);
+    console.log(`userId: ${userId} \n${error.message}`);
   }
 }
 
