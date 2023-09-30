@@ -3,6 +3,8 @@ import telegramBot from "./src/config/telegramBot.js";
 import { UpdateUserSubscriptions } from "./src/services/telegramService.js";
 import { scheduleJob } from "node-schedule";
 
+const PORT = process.env.PORT || 3000;
+
 server.get("/", function (req, res) {
   res.send("The Node.js with Express and node-schedule - telegram bot app");
 });
@@ -12,7 +14,7 @@ const scheduleTask = scheduleJob("* * * * *", () => {
 });
 
 server
-  .listen(process.env.PORT)
+  .listen(PORT)
   .on("error", (err) => {
     console.log("✘ Application failed to start");
     console.error("✘", err.message);
