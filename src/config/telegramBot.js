@@ -1,13 +1,15 @@
 import "dotenv/config";
 import TelegramBot from "node-telegram-bot-api";
 
-let bot;
+let telegramBot;
 
 if (process.env.NODE_ENV === "production") {
-  bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
-  bot.setWebHook(process.env.HEROKU_URL + process.env.TELEGRAM_BOT_TOKEN);
+  telegramBot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+  telegramBot.setWebHook(
+    process.env.HEROKU_URL + process.env.TELEGRAM_BOT_TOKEN
+  );
 } else {
-  bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
+  telegramBot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
     polling: true,
   });
 }
@@ -41,10 +43,10 @@ const BOT_COMMANDS = [
   },
 ];
 
-await bot.setMyCommands(BOT_COMMANDS);
+await telegramBot.setMyCommands(BOT_COMMANDS);
 
-export function isUserAllowed(userId) {
+function isUserAllowed(userId) {
   return allowedUserIds.includes(userId);
 }
 
-export default bot;
+export { telegramBot as default, isUserAllowed };

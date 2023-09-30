@@ -1,17 +1,9 @@
-import express from "express";
-import bot from "./src/models/telegramBotModel.js";
+import server from "./src/config/server.js";
+import telegramBot from "./src/config/telegramBot.js";
 import { UpdateUserSubscriptions } from "./src/services/telegramService.js";
 import { scheduleJob } from "node-schedule";
 
-const app = express();
-
-app.use(express.json());
-app.use((err, req, res, next) => {
-  console.log(err.stack);
-  res.status(500).send('Something went wrong!');
-});
-
-app.get("/", function (req, res) {
+server.get("/", function (req, res) {
   res.send("The Node.js with Express and node-schedule - telegram bot app");
 });
 
@@ -19,13 +11,18 @@ const scheduleTask = scheduleJob("* * * * *", () => {
   UpdateUserSubscriptions();
 });
 
-const server = app.listen(process.env.PORT, "0.0.0.0", () => {
-  const host = server.address().address;
-  const port = server.address().port;
-  console.log("Web server started at http://%s:%s", host, port);
-});
+server
+  .listen(process.env.PORT)
+  .on("error", (err) => {
+    console.log("✘ Application failed to start");
+    console.error("✘", err.message);
+    process.exit(0);
+  })
+  .on("listening", () => {
+    console.log("✔ Application Started");
+  });
 
-app.post(`/${process.env.TELEGRAM_BOT_TOKEN}`, (req, res) => {
-  bot.processUpdate(req.body);
+server.post(`/${process.env.TELEGRAM_BOT_TOKEN}`, (req, res) => {
+  telegramBot.processUpdate(req.body);
   res.sendStatus(200);
 });

@@ -1,4 +1,4 @@
-import bot, { isUserAllowed } from "./../models/telegramBotModel.js";
+import telegramBot, { isUserAllowed } from "./../config/telegramBot.js";
 import {
   searchOlxAdvertisements,
   updateOlxAdvertisement,
@@ -13,11 +13,11 @@ import {
 } from "../models/subscriptionModel.js";
 import { createNewProduct, deleteProductsByUserIdByCategoryBySearchKeyWords, getProductById } from "../models/productModel.js";
 
-bot.on("polling_error", (msg) => console.log(`polling_error:${msg}`));
+telegramBot.on("polling_error", (msg) => console.log(`polling_error:${msg}`));
 
-bot.on("webhook_error", (msg) => console.log(`webhook_error: ${msg}`));
+telegramBot.on("webhook_error", (msg) => console.log(`webhook_error: ${msg}`));
 
-bot.on('error', (error) => {
+telegramBot.on('error', (error) => {
   if (error.message.includes('socket hang up')) {
     console.log('Socket hang up error occurred:', error);
   } else {
@@ -25,36 +25,36 @@ bot.on('error', (error) => {
   }
 });
 
-bot.on("message", async (msg) => {
+telegramBot.on("message", async (msg) => {
   const userId = msg.from.id;
   const messageText = msg.text.toString().toLowerCase();
   const chatId = msg.chat.id;
 
   if (!isUserAllowed(userId)) {
-    bot.sendMessage(chatId, "Sorry, you are not authorized to use this bot.");
+    telegramBot.sendMessage(chatId, "Sorry, you are not authorized to use this bot.");
     return;
   }
 
   switch (messageText) {
     case "/hello":
-      return bot.sendMessage(
+      return telegramBot.sendMessage(
         userId,
         `Привіт, ${msg.from.first_name}\nНехай цей день стане найкращим у твоєму житті.`
       );
     case "/add":
-      bot.sendMessage(
+      telegramBot.sendMessage(
         chatId,
         "Щоб створити підписку, напишіть,\nнаприклад:\n/add category nike \n/add category air force"
       );
       return;
     case "/delete":
-      bot.sendMessage(chatId, "Щоб видалити підписку, напишіть:\n/delete <id>");
+      telegramBot.sendMessage(chatId, "Щоб видалити підписку, напишіть:\n/delete <id>");
       return;
     case "/list":
       const userSubscriptions = getListSubscriptionByUserId(userId);
 
       if (!userSubscriptions || userSubscriptions.length === 0) {
-        bot.sendMessage(
+        telegramBot.sendMessage(
           chatId,
           "👀 Активні підписки:\nНажаль, немає активних підписок"
         );
@@ -66,7 +66,7 @@ bot.on("message", async (msg) => {
         temp.push(`${i}. ${userSubscriptions[i].join(" ")}`);
       }
 
-      bot.sendMessage(
+      telegramBot.sendMessage(
         chatId,
         `👀 Активні підписки:\n${
           userSubscriptions ? temp.join("\n") : ""
@@ -75,13 +75,13 @@ bot.on("message", async (msg) => {
       return;
     case "/categories":
       const categories = Object.keys(olxCategories).join("\n");
-      bot.sendMessage(
+      telegramBot.sendMessage(
         chatId,
         `Доступні категорії для підписки:\n\n${categories}\n\np.s. дотримуйтесь правильності написання категорії`
       );
       return;
     case "/update":
-      bot.sendMessage(
+      telegramBot.sendMessage(
         chatId,
         `Щоб оновити підписку і получити нові оголошення. Наприклад:\n/update 1, де '1' номер вашой підписки див. /list`
       );
@@ -97,7 +97,7 @@ bot.on("message", async (msg) => {
     );
 
     if (!userSubscription) {
-      return bot.sendMessage(
+      return telegramBot.sendMessage(
         chatId,
         "Grammar Nazi, немає такої підписки, спробуй ще раз."
       );
@@ -114,7 +114,7 @@ bot.on("message", async (msg) => {
       splitMessageText[1]
     );
 
-    return bot.sendMessage(
+    return telegramBot.sendMessage(
       chatId,
       `Підписку було видалено ${
         isSubscriptionRemoved && isProductsListRemoved
@@ -133,7 +133,7 @@ bot.on("message", async (msg) => {
     );
 
     if (!userSubscription) {
-      bot.sendMessage(
+      telegramBot.sendMessage(
         chatId,
         "Grammar Nazi, немає такого індексу або усе зламалося к хуям"
       );
@@ -152,12 +152,12 @@ bot.on("message", async (msg) => {
     const categoryUrlPath = olxCategories[category];
 
     if (!categoryUrlPath) {
-      bot.sendMessage(chatId, "Grammar Nazi, категорію введено невірно");
+      telegramBot.sendMessage(chatId, "Grammar Nazi, категорію введено невірно");
       return;
     }
 
     if (searchKeyWords.length === 0) {
-      bot.sendMessage(chatId, "Grammar Nazi, забув написати слова для пошуку");
+      telegramBot.sendMessage(chatId, "Grammar Nazi, забув написати слова для пошуку");
       return;
     }
 
@@ -175,13 +175,13 @@ bot.on("message", async (msg) => {
 
       createNewSubscription(userId, categorySearchKeyWords);
 
-      bot.sendMessage(
+      telegramBot.sendMessage(
         chatId,
         `Успішно було додано підписку\n${categorySearchKeyWords.join(" ")}`
       );
     } catch (error) {
       if (error.message == "За цими ключовими словами не знайдено оголошень") {
-        bot.sendMessage(userId, error.message);
+        telegramBot.sendMessage(userId, error.message);
       } else {
         console.log(
           `userId: ${userId} msg: ${messageText}\n${error.message}`
@@ -230,7 +230,7 @@ async function UpdateUserSubscriptionAsync(userId, userSubscription) {
     const message = newProduct
       .map((item, index) => `${index}. [${item.title}](${item.link})`)
       .join("\n\n");
-    return bot.sendMessage(userId, message, { parse_mode: "Markdown" });
+    return telegramBot.sendMessage(userId, message, { parse_mode: "Markdown" });
   } catch (error) {
     console.log(`userId: ${userId} \n${error.message}`);
   }
@@ -251,4 +251,4 @@ export function UpdateUserSubscriptions() {
   }
 }
 
-export default bot;
+export default telegramBot;
