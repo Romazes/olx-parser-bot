@@ -1,3 +1,5 @@
+import "dotenv/config";
+import './src/config/database.js';
 import server from "./src/config/server.js";
 import telegramBot from "./src/config/telegramBot.js";
 import { UpdateUserSubscriptions } from "./src/services/telegramService.js";
