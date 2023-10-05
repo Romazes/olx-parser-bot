@@ -76,9 +76,19 @@ export async function parseOLXCategories(subCategoryId) {
 
     const categories = $(`[data-subcategory="${subCategoryId}"]`);
 
+    if(!categories || categories.length === 0) {
+      throw new Error(`Не було знайденно категорій по данному ID:${subCategoryId}`);
+    }
+
     const mainTitle = categories.children().children().attr("href");
 
-    console.log(`mainTitle link: ${mainTitle}`);
+    const mainCategoryLink = new URL(mainTitle);
+
+    // see = ./models/Category.js 
+    const categoriesObj = {
+      categoryTitle: mainCategoryLink.pathname.split("/")[1],
+      subTitles: []
+    };
 
     categories
       .children("ul")
@@ -90,10 +100,14 @@ export async function parseOLXCategories(subCategoryId) {
 
         const categoryLink = new URL($(element).find("a").attr("href"));
         const subTitle = categoryLink.pathname.split("/")[2];
-        console.log(`"${subTitle}" : "${categoryLink.pathname}"`);
+
+        categoriesObj["subTitles"].push({_id: subTitle, uriPath: categoryLink.pathname});
       });
+
+      return categoriesObj;
   } catch (error) {
     console.log("Failed to retrieve the page:", error.message);
+    throw new Error(`Не було знайденно категорій по данному ID:${subCategoryId}`);
   }
 }
 

@@ -1,5 +1,6 @@
 import telegramBot, { isUserAllowed } from "./../config/telegramBot.js";
 import {
+  parseOLXCategories,
   searchOlxAdvertisements,
   updateOlxAdvertisement,
 } from "./olxService.js";
@@ -12,6 +13,9 @@ import {
   getSubscriptionByUserIdAndIndex,
 } from "../models/subscriptionModel.js";
 import { createNewProduct, deleteProductsByUserIdByCategoryBySearchKeyWords, getProductById } from "../models/productModel.js";
+import CategoryService from "./CategoryService.js";
+import Category from "../models/Category.js";
+const categoryService = new CategoryService(new Category().getInstance());
 
 telegramBot.on("polling_error", (msg) => console.log(`polling_error:${msg}`));
 
@@ -187,6 +191,26 @@ telegramBot.on("message", async (msg) => {
           `userId: ${userId} msg: ${messageText}\n${error.message}`
         );
       }
+    }
+  }
+
+  if(messageText.startsWith("/update-category")) {
+    const splitMessageText = messageText.split(" ");
+
+    const subCategoryID = splitMessageText.slice(1);
+
+    if (!subCategoryID || subCategoryID.length === 0) {
+      return telegramBot.sendMessage(chatId, "Grammar Nazi, забув написати ID, які будуть парситься в категорії");
+    }
+
+    try {
+
+      const newOlxCategories = await parseOLXCategories(subCategoryID);
+
+      await categoryService.insert(newOlxCategories);
+
+    } catch(error) {
+      telegramBot.sendMessage(chatId, error.message);
     }
   }
 });
