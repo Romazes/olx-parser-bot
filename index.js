@@ -11,8 +11,8 @@ server.get("/", function (req, res) {
   res.send("The Node.js with Express and node-schedule - telegram bot app");
 });
 
-const scheduleTask = scheduleJob("* * * * *", () => {
-  UpdateUserSubscriptions();
+const scheduleTask = scheduleJob("* * * * *", async () => {
+  await UpdateUserSubscriptions();
 });
 
 server

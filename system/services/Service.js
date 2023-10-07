@@ -22,6 +22,16 @@ class Service {
     }
   }
 
+  async getAll() {
+    try {
+      const items = await this.model.find();
+
+      return { error: false, statusCode: 200, data: items };
+    } catch (errors) {
+      throw errors;
+    }
+  }
+
   async insert(data) {
     try {
       let item = await this.model.create(data);
@@ -30,6 +40,9 @@ class Service {
       }
       throw new Error("Something wrong happened");
     } catch (error) {
+      // TODO: What should I do with duplicate keys ?
+      if (error.code == 11000) return { error: false, statusCode: 409 };
+
       return { error: true, statusCode: 400, error };
     }
   }
