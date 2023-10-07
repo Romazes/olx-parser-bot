@@ -1,254 +1,282 @@
-import bot, { isUserAllowed } from "./../models/telegramBotModel.js";
+import telegramBot, { isUserAllowed } from "./../config/telegramBot.js";
 import {
+  parseOLXCategories,
   searchOlxAdvertisements,
-  updateOlxAdvertisement,
+  searchOlxAdvertisementsByUrl,
 } from "./olxService.js";
-import { olxCategories } from "../models/olxModel.js";
-import {
-  createNewSubscription,
-  deleteSubscriptionByUserIdAndIndex,
-  getAllUserSubscriptions,
-  getListSubscriptionByUserId,
-  getSubscriptionByUserIdAndIndex,
-} from "../models/subscriptionModel.js";
-import { createNewProduct, deleteProductsByUserIdByCategoryBySearchKeyWords, getProductById } from "../models/productModel.js";
+import CategoryService from "./CategoryService.js";
+import Category from "../models/Category.js";
+import ProductService from "./ProductService.js";
+import Product from "../models/Product.js";
+import UserSubscription from "../models/UserSubscription.js";
+import UserSubscriptionService from "./UserSubscriptionService.js";
 
-bot.on("polling_error", (msg) => console.log(`polling_error:${msg}`));
+const productService = new ProductService(new Product().getInstance());
+const userSubscriptionService = new UserSubscriptionService(
+  new UserSubscription().getInstance()
+);
+const categoryService = new CategoryService(new Category().getInstance());
 
-bot.on("webhook_error", (msg) => console.log(`webhook_error: ${msg}`));
+telegramBot.on("polling_error", (msg) => console.log(`polling_error:${msg}`));
 
-bot.on('error', (error) => {
-  if (error.message.includes('socket hang up')) {
-    console.log('Socket hang up error occurred:', error);
+telegramBot.on("webhook_error", (msg) => console.log(`webhook_error: ${msg}`));
+
+telegramBot.on("error", (error) => {
+  if (error.message.includes("socket hang up")) {
+    console.log("Socket hang up error occurred:", error);
   } else {
-    console.log('Error occurred:', error);
+    console.log("Error occurred:", error);
   }
 });
 
-bot.on("message", async (msg) => {
+telegramBot.on("message", async (msg) => {
   const userId = msg.from.id;
   const messageText = msg.text.toString().toLowerCase();
   const chatId = msg.chat.id;
 
   if (!isUserAllowed(userId)) {
-    bot.sendMessage(chatId, "Sorry, you are not authorized to use this bot.");
+    telegramBot.sendMessage(
+      chatId,
+      "Sorry, you are not authorized to use this bot."
+    );
     return;
   }
 
   switch (messageText) {
     case "/hello":
-      return bot.sendMessage(
+      return telegramBot.sendMessage(
         userId,
         `Привіт, ${msg.from.first_name}\nНехай цей день стане найкращим у твоєму житті.`
       );
     case "/add":
-      bot.sendMessage(
+      telegramBot.sendMessage(
         chatId,
         "Щоб створити підписку, напишіть,\nнаприклад:\n/add category nike \n/add category air force"
       );
       return;
     case "/delete":
-      bot.sendMessage(chatId, "Щоб видалити підписку, напишіть:\n/delete <id>");
+      telegramBot.sendMessage(
+        chatId,
+        "Щоб видалити підписку, напишіть:\n/delete id"
+      );
       return;
-    case "/list":
-      const userSubscriptions = getListSubscriptionByUserId(userId);
+    case "/list": {
+      try {
+        const allUserSubscriptions = await getUserSubscriptionsById(userId);
 
-      if (!userSubscriptions || userSubscriptions.length === 0) {
-        bot.sendMessage(
-          chatId,
-          "👀 Активні підписки:\nНажаль, немає активних підписок"
+        const subs = allUserSubscriptions.data.subscription.map(
+          ({ category, searchKeyWords }, index) => {
+            return `${index}. ${category} ${searchKeyWords}`;
+          }
         );
-        return;
-      }
 
-      const temp = [];
-      for (let i = 0; i < userSubscriptions.length; i++) {
-        temp.push(`${i}. ${userSubscriptions[i].join(" ")}`);
+        return telegramBot.sendMessage(
+          chatId,
+          `👀 Активні підписки:\n${subs.join(
+            "\n"
+          )}\n\nЩоб видалити підписку, введіть /delete та індекс підписки.\nНаприклад: /delete 1`
+        );
+      } catch (error) {
+        return telegramBot.sendMessage(chatId, error.message);
       }
-
-      bot.sendMessage(
-        chatId,
-        `👀 Активні підписки:\n${
-          userSubscriptions ? temp.join("\n") : ""
-        }\n\nЧтобы удалить подписку, напишите /delete и номер подписки или поисковый запрос.\nНаприклад:\n/delete 1`
-      );
-      return;
+    }
     case "/categories":
-      const categories = Object.keys(olxCategories).join("\n");
-      bot.sendMessage(
+      const categories = await getAvailableSubscriptions();
+
+      return telegramBot.sendMessage(
         chatId,
-        `Доступні категорії для підписки:\n\n${categories}\n\np.s. дотримуйтесь правильності написання категорії`
+        `Доступні категорії для підписки:\n\n${categories.join(
+          "\n"
+        )}\n\np.s. дотримуйтесь правильності написання категорії.`
       );
-      return;
     case "/update":
-      bot.sendMessage(
+      telegramBot.sendMessage(
         chatId,
         `Щоб оновити підписку і получити нові оголошення. Наприклад:\n/update 1, де '1' номер вашой підписки див. /list`
       );
       return;
   }
 
-  if (messageText.startsWith("/delete")) {
-    const splitMessageText = messageText.split(" ");
+  const splitMessageText = messageText.split(" ");
+  switch (splitMessageText[0]) {
+    case "/delete": {
+      try {
+        const index = splitMessageText[1];
 
-    const userSubscription = getSubscriptionByUserIdAndIndex(
-      userId,
-      splitMessageText[1]
-    );
+        const allUserSubscriptions = await getUserSubscriptionsById(userId);
 
-    if (!userSubscription) {
-      return bot.sendMessage(
-        chatId,
-        "Grammar Nazi, немає такої підписки, спробуй ще раз."
-      );
-    }
+        if (
+          typeof allUserSubscriptions.data.subscription[index] === "undefined"
+        ) {
+          return telegramBot.sendMessage(
+            chatId,
+            "Grammar Nazi, немає такої підписки, спробуй ще раз."
+          );
+        }
 
-    const isProductsListRemoved =
-      deleteProductsByUserIdByCategoryBySearchKeyWords(
-        userId,
-        userSubscription[0],
-        userSubscription[1]
-      );
-    const isSubscriptionRemoved = deleteSubscriptionByUserIdAndIndex(
-      userId,
-      splitMessageText[1]
-    );
+        const result = await userSubscriptionService.RemoveSubscriptionById({
+          _id: userId,
+          subscriptionId: allUserSubscriptions.data.subscription[index]._id,
+        });
 
-    return bot.sendMessage(
-      chatId,
-      `Підписку було видалено ${
-        isSubscriptionRemoved && isProductsListRemoved
-          ? "успішно"
-          : "не успішно (спробуйте ще раз)"
-      }`
-    );
-  }
-
-  if (messageText.startsWith("/update")) {
-    const splitMessageText = messageText.split(" ");
-
-    const userSubscription = getSubscriptionByUserIdAndIndex(
-      userId,
-      splitMessageText[1]
-    );
-
-    if (!userSubscription) {
-      bot.sendMessage(
-        chatId,
-        "Grammar Nazi, немає такого індексу або усе зламалося к хуям"
-      );
-      return;
-    }
-
-    UpdateUserSubscriptionAsync(chatId, userSubscription);
-  }
-
-  if (messageText.startsWith("/add")) {
-    // ["/add", "category", "search key words"]
-    const splitMessageText = messageText.split(" ");
-    const category = splitMessageText[1];
-    const searchKeyWords = splitMessageText.slice(2);
-
-    const categoryUrlPath = olxCategories[category];
-
-    if (!categoryUrlPath) {
-      bot.sendMessage(chatId, "Grammar Nazi, категорію введено невірно");
-      return;
-    }
-
-    if (searchKeyWords.length === 0) {
-      bot.sendMessage(chatId, "Grammar Nazi, забув написати слова для пошуку");
-      return;
-    }
-
-    try {
-      const products = await searchOlxAdvertisements(
-        categoryUrlPath,
-        searchKeyWords
-      );
-
-      products.forEach(({ id, link, title }) =>
-        createNewProduct(userId, category, searchKeyWords, { id, link, title })
-      );
-
-      const categorySearchKeyWords = splitMessageText.slice(1);
-
-      createNewSubscription(userId, categorySearchKeyWords);
-
-      bot.sendMessage(
-        chatId,
-        `Успішно було додано підписку\n${categorySearchKeyWords.join(" ")}`
-      );
-    } catch (error) {
-      if (error.message == "За цими ключовими словами не знайдено оголошень") {
-        bot.sendMessage(userId, error.message);
-      } else {
-        console.log(
-          `userId: ${userId} msg: ${messageText}\n${error.message}`
+        return telegramBot.sendMessage(
+          chatId,
+          'Підписку було видалено "успішно".'
         );
+      } catch (error) {
+        return telegramBot.sendMessage(chatId, error.message);
+      }
+    }
+    case "/update": {
+      await UpdateUserSubscriptions();
+      break;
+    }
+    case "/update-category": {
+      const subCategoryID = splitMessageText.slice(1);
+
+      if (!subCategoryID || subCategoryID.length === 0) {
+        return telegramBot.sendMessage(
+          chatId,
+          "Grammar Nazi, забув написати ID, які будуть парситься в категорії"
+        );
+      }
+
+      try {
+        const newOlxCategories = await parseOLXCategories(subCategoryID);
+
+        await categoryService.insert(newOlxCategories);
+      } catch (error) {
+        telegramBot.sendMessage(chatId, error.message);
+      }
+      break;
+    }
+    case "/add": {
+      // ["/add", "category", "search key words"]
+      const category = splitMessageText[1]; // "category"
+      const searchKeyWords = splitMessageText.slice(2); // array search keyWords ["nike" "air", '']
+
+      const categoryUriPath = await categoryService.get(category);
+      if (!categoryUriPath || categoryUriPath.error == true) {
+        return telegramBot.sendMessage(
+          chatId,
+          "Grammar Nazi, категорію введено невірно."
+        );
+      }
+
+      if (searchKeyWords.length === 0) {
+        return telegramBot.sendMessage(
+          chatId,
+          "Grammar Nazi, забув написати слова для пошуку."
+        );
+      }
+
+      try {
+        const products = await searchOlxAdvertisements(
+          categoryUriPath.data.uriPath,
+          searchKeyWords
+        );
+
+        const productModel = [];
+        for (let [key, value] of products.data) {
+          productModel.push({ _id: key, userId: userId });
+        }
+
+        const res = await productService.insert(productModel);
+
+        if (!res || res.statusCode === 400) {
+          throw new Error("Щось запахло смаженим 🔥");
+        }
+
+        const userSubscription = {
+          _id: userId,
+          subscription: [
+            {
+              category: category,
+              searchKeyWords: searchKeyWords.join(" "),
+              searchUri: products.searchURI,
+            },
+          ],
+        };
+
+        await userSubscriptionService.findByIdAndUpdate(userSubscription);
+
+        return telegramBot.sendMessage(
+          chatId,
+          `Вітаю 🥳, було додано нову підписку:\n ${category} ${searchKeyWords.join(
+            " "
+          )}`
+        );
+      } catch (error) {
+        return telegramBot.sendMessage(chatId, error.message);
       }
     }
   }
 });
 
-async function UpdateUserSubscriptionAsync(userId, userSubscription) {
-  const categoryUrlPath = olxCategories[userSubscription[0]];
-  const searchKeyWords = userSubscription.slice(1);
+const getUserSubscriptionsById = async (userId) => {
+  const allUserSubscriptions = await userSubscriptionService.get(userId);
 
+  if (
+    !allUserSubscriptions ||
+    allUserSubscriptions.error === true ||
+    allUserSubscriptions.data.subscription.length === 0
+  ) {
+    throw new Error("Ти що? - На приколі, не знайдено жодних підписок.");
+  }
+  return allUserSubscriptions;
+};
+
+const getAvailableSubscriptions = async (_) => {
+  const categories = await categoryService.getAll();
+
+  return categories.data.map(({ _id }, index) => `${index}. ${_id}`);
+};
+
+async function UpdateUserSubscriptionAsync(userId, searchUrl) {
   try {
-    const updatedProducts = await updateOlxAdvertisement(
-      categoryUrlPath,
-      searchKeyWords,
-      true
-    );
+    const updatedProducts = await searchOlxAdvertisementsByUrl(searchUrl, true);
 
     if (updatedProducts.length == 0) {
       return;
     }
 
-    const newProduct = [];
+    const newProducts = [];
+    for (let [key, value] of updatedProducts.data) {
+      const productModel = { _id: key, userId: userId };
+      const res = await productService.insert(productModel);
 
-    for (let i = 0; i < updatedProducts.length; i++) {
-      if (!getProductById(userId, userSubscription[0], searchKeyWords, updatedProducts[i].id)) {
-        const { id, link, title } = updatedProducts[i];
-        newProduct.push(
-          createNewProduct(
-            userId,
-            userSubscription[0],
-            searchKeyWords,
-            { id, link, title },
-            true
-          )
-        );
+      if (!res || res.statusCode === 409) {
+        updatedProducts.data.delete(key);
+      } else {
+        newProducts.push({ title: value.title, link: value.link });
       }
     }
 
-    if (newProduct.length == 0) {
+    if (newProducts.length == 0) {
       return;
     }
 
-    const message = newProduct
+    const message = newProducts
       .map((item, index) => `${index}. [${item.title}](${item.link})`)
       .join("\n\n");
-    return bot.sendMessage(userId, message, { parse_mode: "Markdown" });
+
+    return telegramBot.sendMessage(userId, message, { parse_mode: "Markdown" });
   } catch (error) {
     console.log(`userId: ${userId} \n${error.message}`);
   }
 }
 
-export function UpdateUserSubscriptions() {
-  const usersSubs = getAllUserSubscriptions();
+export async function UpdateUserSubscriptions() {
+  const userSubs = await userSubscriptionService.getAll();
 
-  for (const userId in usersSubs) {
-    const userSubscriptions = usersSubs[userId];
-    for (const prop in userSubscriptions) {
-      if (userSubscriptions[prop].length > 0) {
-        userSubscriptions[prop].forEach(async (subs) => {
-          await UpdateUserSubscriptionAsync(userId, subs);
-        });
-      }
+  for (const userIndex in userSubs.data) {
+    for (const subscriptionIndex in userSubs.data[userIndex].subscription) {
+      const userId = userSubs.data[userIndex]._id;
+      const searchUrl =
+        userSubs.data[userIndex].subscription[subscriptionIndex].searchUri;
+      await UpdateUserSubscriptionAsync(userId, searchUrl);
     }
   }
 }
 
-export default bot;
+export default telegramBot;

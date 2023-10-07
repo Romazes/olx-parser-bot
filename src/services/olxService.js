@@ -1,63 +1,50 @@
 import axios from "axios";
 import { load } from "cheerio";
-import { olxSearchFilter, olxURL } from "../models/olxModel.js";
+import { OLX_SEARCH_FILTER_URI_QUERY, OLX_URL } from "../models/olxModel.js";
 
-export async function updateOlxAdvertisement(
+export const generateSearchOlxUri = (categoryUrlPath, searchKeyWords) => {
+  const pathParam = "q-" + searchKeyWords.join("-") + "/";
+  const queryParam = "?" + OLX_SEARCH_FILTER_URI_QUERY["new_ones"];
+
+  return new URL(OLX_URL + categoryUrlPath + pathParam + queryParam);
+};
+
+export async function searchOlxAdvertisements(
   categoryUrlPath,
   searchKeyWords,
   skipTopAds
 ) {
-  const pathParam = "q-" + searchKeyWords.join("-") + "/";
-  const queryParam = "?" + olxSearchFilter["new_ones"];
-  const response = await axios.get(
-    olxURL + categoryUrlPath + pathParam + queryParam
-  );
-
-  const $ = load(response.data);
-
-  const userAds = $('[data-testid="listing-grid"]');
-
-  const products = [];
-  userAds.children('[data-cy="l-card"]').each((index, element) => {
-    const id = $(element).attr("id");
-    const link = olxURL + $(element).children("a").attr("href");
-    const title = $(element).find("h6").text();
-
-    //Do you want skip the Top ad ?
-    const isTopAd =
-      $(element).find('[data-testid="adCard-featured"]').length > 0;
-    if (skipTopAds && isTopAd) {
-      return;
-    }
-
-    products.push({ id, link, title });
-  });
-
-  return products;
+  const getUrl = generateSearchOlxUri(categoryUrlPath, searchKeyWords);
+  return await searchOlxAdvertisementsByUrl(getUrl.href, skipTopAds);
 }
 
-export async function searchOlxAdvertisements(categoryUrlPath, searchKeyWords) {
-  const pathParam = "q-" + searchKeyWords.join("-") + "/";
-  const queryParam = "?" + olxSearchFilter["new_ones"];
-  const response = await axios.get(
-    olxURL + categoryUrlPath + pathParam + queryParam
-  );
+export async function searchOlxAdvertisementsByUrl(url, skipTopAds) {
+  const response = await axios.get(url);
 
   const $ = load(response.data);
 
   if (getAdvertisementAmount($, '[data-testid="listing-count-msg"]') <= 0) {
-    throw new Error("За цими ключовими словами не знайдено оголошень");
+    throw new Error("За цими ключовими словами не знайдено оголошень.");
   }
 
-  const products = [];
-  $('[data-testid="listing-grid"]').children('[data-cy="l-card"]').each((index, element) => {
-    const id = $(element).attr("id");
-    const link = olxURL + $(element).children("a").attr("href");
-    const title = $(element).find("h6").text();
+  const data = new Map();
+  $('[data-testid="listing-grid"]')
+    .children('[data-cy="l-card"]')
+    .each((index, element) => {
+      const id = $(element).attr("id");
+      const link = OLX_URL + $(element).children("a").attr("href");
+      const title = $(element).find("h6").text();
 
-    products.push({ id, link, title });
-  });
-  return products;
+      //Do you want skip the Top advertisements ?
+      const isTopAd =
+        $(element).find('[data-testid="adCard-featured"]').length > 0;
+      if (skipTopAds && isTopAd) {
+        return;
+      }
+
+      data.set(id, { link, title });
+    });
+  return { searchURI: url, data: data };
 }
 
 /**
@@ -70,15 +57,29 @@ export async function searchOlxAdvertisements(categoryUrlPath, searchKeyWords) {
  */
 export async function parseOLXCategories(subCategoryId) {
   try {
-    const response = await axios.get(olxURL);
+    const response = await axios.get(OLX_URL);
 
     const $ = load(response.data);
 
     const categories = $(`[data-subcategory="${subCategoryId}"]`);
 
+    if (!categories || categories.length === 0) {
+      throw new Error(
+        `Не було знайденно категорій по данному ID:${subCategoryId}`
+      );
+    }
+
     const mainTitle = categories.children().children().attr("href");
 
-    console.log(`mainTitle link: ${mainTitle}`);
+    const mainCategoryLink = new URL(mainTitle);
+
+    // see = ./models/Category.js
+    const categoriesObj = [
+      {
+        _id: mainCategoryLink.pathname.split("/")[1],
+        uriPath: mainCategoryLink.pathname,
+      },
+    ];
 
     categories
       .children("ul")
@@ -90,10 +91,16 @@ export async function parseOLXCategories(subCategoryId) {
 
         const categoryLink = new URL($(element).find("a").attr("href"));
         const subTitle = categoryLink.pathname.split("/")[2];
-        console.log(`"${subTitle}" : "${categoryLink.pathname}"`);
+
+        categoriesObj.push({ _id: subTitle, uriPath: categoryLink.pathname });
       });
+
+    return categoriesObj;
   } catch (error) {
     console.log("Failed to retrieve the page:", error.message);
+    throw new Error(
+      `Не було знайденно категорій по данному ID:${subCategoryId}`
+    );
   }
 }
 
