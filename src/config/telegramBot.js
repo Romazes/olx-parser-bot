@@ -40,6 +40,7 @@ const BOT_COMMANDS = [
     command: "delete",
     description: "Видалити підписку по ід",
   },
+  // { command: "/update-category", description: "Прихована команда від користувачів."}
 ];
 
 await telegramBot.setMyCommands(BOT_COMMANDS);
