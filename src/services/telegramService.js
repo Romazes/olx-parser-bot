@@ -143,8 +143,8 @@ telegramBot.on("message", async (msg) => {
         }
 
         UpdateUserSubscriptionAsync(chatId, userSubscription);
+        break;
       }
-      break;
     case "/update-category":
       {
         const subCategoryID = splitMessageText.slice(1);
@@ -163,8 +163,8 @@ telegramBot.on("message", async (msg) => {
         } catch (error) {
           telegramBot.sendMessage(chatId, error.message);
         }
+        break;
       }
-      break;
   }
 
   if (messageText.startsWith("/add")) {
