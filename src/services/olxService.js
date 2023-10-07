@@ -85,10 +85,7 @@ export async function parseOLXCategories(subCategoryId) {
     const mainCategoryLink = new URL(mainTitle);
 
     // see = ./models/Category.js 
-    const categoriesObj = {
-      categoryTitle: mainCategoryLink.pathname.split("/")[1],
-      subTitles: []
-    };
+    const categoriesObj = [ { _id: mainCategoryLink.pathname.split("/")[1], uriPath: mainCategoryLink.pathname } ]
 
     categories
       .children("ul")
@@ -101,7 +98,7 @@ export async function parseOLXCategories(subCategoryId) {
         const categoryLink = new URL($(element).find("a").attr("href"));
         const subTitle = categoryLink.pathname.split("/")[2];
 
-        categoriesObj["subTitles"].push({_id: subTitle, uriPath: categoryLink.pathname});
+        categoriesObj.push({_id: subTitle, uriPath: categoryLink.pathname});
       });
 
       return categoriesObj;

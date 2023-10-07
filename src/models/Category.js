@@ -3,7 +3,7 @@ import mongoose, { Schema } from "mongoose";
 class Category {
 
     initSchema() {
-        const subCategorySchema = new Schema({
+        const schema = new Schema ({
             _id: {
                 type: String,
                 required: true
@@ -12,14 +12,6 @@ class Category {
                 type: String,
                 required: true
             }
-        })
-
-        const schema = new Schema ({
-            categoryTitle: {
-                type: String,
-                required: true
-            },
-            subTitles: [subCategorySchema]
         });
 
         return mongoose.model("category", schema);
