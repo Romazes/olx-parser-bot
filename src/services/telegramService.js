@@ -55,7 +55,7 @@ telegramBot.on("message", async (msg) => {
   switch (messageText) {
     case "/hello":
       return telegramBot.sendMessage(
-        userId,
+        chatId,
         `Привіт, ${msg.from.first_name}\nНехай цей день стане найкращим у твоєму житті.`
       );
     case "/add":
@@ -199,6 +199,7 @@ telegramBot.on("message", async (msg) => {
 
         const userSubscription = {
           _id: userId,
+          chatId: chatId,
           subscription: [
             {
               category: category,
@@ -242,7 +243,7 @@ const getAvailableSubscriptions = async (_) => {
   return categories.data.map(({ _id }, index) => `${index}. ${_id}`);
 };
 
-async function UpdateUserSubscriptionAsync(userId, searchUrl) {
+async function UpdateUserSubscriptionAsync(userId, searchUrl, targetRecipientID) {
   try {
     const updatedProducts = await searchOlxAdvertisementsByUrl(searchUrl, true);
 
@@ -270,7 +271,7 @@ async function UpdateUserSubscriptionAsync(userId, searchUrl) {
       .map((item, index) => `${index}. [${item.title}](${item.link})`)
       .join("\n\n");
 
-    return telegramBot.sendMessage(userId, message, { parse_mode: "Markdown" });
+    return telegramBot.sendMessage(targetRecipientID, message, { parse_mode: "Markdown" });
   } catch (error) {
     console.log(`userId: ${userId} \n${error.message}`);
   }
@@ -280,11 +281,12 @@ export async function UpdateUserSubscriptions() {
   const userSubs = await userSubscriptionService.getAll();
 
   for (const userIndex in userSubs.data) {
+    const userId = userSubs.data[userIndex]._id;
+    const chatId = userSubs.data[userIndex].chatId;
     for (const subscriptionIndex in userSubs.data[userIndex].subscription) {
-      const userId = userSubs.data[userIndex]._id;
       const searchUrl =
         userSubs.data[userIndex].subscription[subscriptionIndex].searchUri;
-      await UpdateUserSubscriptionAsync(userId, searchUrl);
+      await UpdateUserSubscriptionAsync(userId, searchUrl, chatId);
     }
   }
 }

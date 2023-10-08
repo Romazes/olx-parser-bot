@@ -13,6 +13,7 @@ class UserSubscriptionService extends Service {
       const item = await this.model.findByIdAndUpdate(
         data._id,
         {
+          chatId: data.chatId,
           $push: {
             subscription: {
               category: data.subscription[0].category,

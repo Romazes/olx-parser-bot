@@ -8,6 +8,9 @@ class UserSubscription {
         type: Number,
         require: true,
       },
+      chatId: {
+        type: Number
+      },
       subscription: [
         {
           type: new Subscription().initSchema().schema,
