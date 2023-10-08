@@ -7,10 +7,6 @@ class Product {
         type: Number,
         required: true,
       },
-      userId: {
-        type: Number,
-        required: true,
-      },
     });
 
     mongoose.model("product", schema);

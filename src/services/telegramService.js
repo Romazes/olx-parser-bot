@@ -186,15 +186,12 @@ telegramBot.on("message", async (msg) => {
           searchKeyWords
         );
 
-        const productModel = [];
         for (let [key, value] of products.data) {
-          productModel.push({ _id: key, userId: userId });
-        }
-
-        const res = await productService.insert(productModel);
-
-        if (!res || res.statusCode === 400) {
-          throw new Error("Щось запахло смаженим 🔥");
+          const res = await productService.insert({_id: key});
+    
+          if (!res || res.statusCode === 409) {
+            products.data.delete(key);
+          }
         }
 
         const userSubscription = {
