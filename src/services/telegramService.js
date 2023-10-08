@@ -30,6 +30,8 @@ telegramBot.on("error", (error) => {
 });
 
 telegramBot.on("message", async (msg) => {
+  // When add || remove from group, receive strange message 
+  if(!msg || !msg.text || msg.text.length === 0) return;
   const userId = msg.from.id;
   const messageText = msg.text.toString().toLowerCase();
   const chatId = msg.chat.id;
