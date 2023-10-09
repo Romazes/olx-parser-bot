@@ -19,9 +19,12 @@ export async function searchOlxAdvertisements(
 }
 
 export async function searchOlxAdvertisementsByUrl(url, skipTopAds) {
-  const response = await axios.get(url);
+  let response = await axios.get(url);
 
   const $ = load(response.data);
+
+  // clear response
+  response = null;
 
   if (getAdvertisementAmount($, '[data-testid="listing-count-msg"]') <= 0) {
     throw new Error("За цими ключовими словами не знайдено оголошень.");
