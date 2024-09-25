@@ -35,7 +35,7 @@ export async function searchOlxAdvertisementsByUrl(url, skipTopAds) {
     .children('[data-cy="l-card"]')
     .each((index, element) => {
       const id = $(element).attr("id");
-      const link = OLX_URL + $(element).children("a").attr("href");
+      const link = OLX_URL + $(element).find('a').attr("href");
       const title = $(element).find("h6").text();
 
       //Do you want skip the Top advertisements ?
